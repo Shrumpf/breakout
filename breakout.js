@@ -54,14 +54,13 @@ function getRandomDroppable() {
 
 
 function getRandomColor() {
-    var letters = '0123456789ABCDEF';
-    var color = '#';
-    for (var i = 0; i < 6; i++) {
+    const letters = '0123456789ABCDEF';
+    let color = '#';
+    for (let i = 0; i < 6; i++) {
         color += letters[Math.floor(Math.random() * 16)];
     }
     return color;
 }
-
 
 class Game {
     _paddleHitPositions = [];
@@ -126,19 +125,21 @@ class Game {
         window.requestAnimationFrame(this.gameloop.bind(this));
     }
 
-    RectCircleColliding(circle, rect) {
-        var distX = Math.abs(circle.X - rect.X - rect.Width / 2);
-        var distY = Math.abs(circle.Y - rect.Y - rect.Height / 2);
+    RectCircleColliding(ball, block) {
+        const distX = Math.abs(ball.X - block.X - block.Width / 2);
+        const distY = Math.abs(ball.Y - block.Y - block.Height / 2);
 
-        if (distX > (rect.Width / 2 + circle.Radius)) { return false; }
-        if (distY > (rect.Height / 2 + circle.Radius)) { return false; }
+        if (distX > (block.Width / 2 + ball.Radius) || distY > (block.Height / 2 + ball.Radius)) {
+            return false;
+        }
 
-        if (distX <= (rect.Width / 2)) { return true; }
-        if (distY <= (rect.Height / 2)) { return true; }
+        if (distX <= (block.Width / 2) || distY <= (block.Height / 2)) {
+            return true;
+        }
 
-        var dx = distX - rect.Width / 2;
-        var dy = distY - rect.Height / 2;
-        return (dx * dx + dy * dy <= (circle.r * circle.r));
+        const dx = distX - block.Width / 2;
+        const dy = distY - block.Height / 2;
+        return (dx * dx + dy * dy <= (ball.r * ball.r));
     }
 
     collisionDetection() {
