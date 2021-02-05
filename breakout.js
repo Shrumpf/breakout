@@ -61,6 +61,10 @@ class Game {
         }
     }
 
+    moveMouse(mousePos) {
+        this.Paddle.X = mousePos.X - this.Paddle.Width / 2
+    }
+
     init() {
         for (let y = 0; y < this._columns; y++) {
             for (let x = 0; x < this._rows; x++) {
@@ -311,6 +315,10 @@ function Start() {
     Canvas.width = gameWidth;
     Canvas.height = gameHeight;
     game = new Game(8, 8);
+
+    Canvas.addEventListener('mousemove', function(evt) {
+        game.moveMouse(getMousePos(Canvas, evt));
+      }, false);
 }
 
 Start();
@@ -333,3 +341,12 @@ window.onkeyup = function (evt) {
         game.keypress("left", "up");
     }
 }
+
+function getMousePos(canvas, evt) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+      X: evt.clientX - rect.left,
+      Y: evt.clientY - rect.top
+    };
+  }
+
