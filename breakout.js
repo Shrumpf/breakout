@@ -4,6 +4,55 @@ let Canvas;
 let ctx;
 let game;
 
+
+const Droppables = [
+    {
+        Weight: 0.9,
+        Name: "Nothing",
+        Value: 0
+    },
+    {
+        Weight: 0.01,
+        Name: "Double Balls",
+        Value: 1,
+    },
+    {
+        Weight: 0.05,
+        Name: "Bigger Paddle",
+        Value: 2
+    },
+    {
+        Weight: 0.04,
+        Name: "Smaller Paddle",
+        Value: 3
+    },
+    {
+        Weight: 0,
+        Name: "Faster Balls",
+        Value: 4
+    },
+    {
+        Weight: 0,
+        Name: "Slow motion",
+        Value: 5
+    }
+]
+function getRandomDroppable() {
+    var num = Math.random(),
+        s = 0,
+        lastIndex = Droppables.length - 1;
+
+    for (var i = 0; i < lastIndex; ++i) {
+        s += Droppables[i].Weight;
+        if (num < s) {
+            return Droppables[i];
+        }
+    }
+
+    return Droppables[lastIndex];
+};
+
+
 function getRandomColor() {
     var letters = '0123456789ABCDEF';
     var color = '#';
@@ -107,23 +156,25 @@ class Game {
 
             if (by + bdy < br) {
                 ball.DY = -ball.DY;
-
             }
 
             if (by + br >= gameHeight) {
-                ball.DY = - ball.DY;
-                this.State = 0;
-                if (this.Score > this.Highscore) {
-                    localStorage.setItem('highscore', this.Score);
+                if (this.Balls.length === 1) {
+                    this.State = 0;
+                    if (this.Score > this.Highscore) {
+                        localStorage.setItem('highscore', this.Score);
+                    }
+                    console.log(this._paddleHitPositions)
+                    Start();
+                } else {
+                    this.Balls = this.Balls.filter(b => !(b.X === ball.X && b.Y === ball.Y))
                 }
-                console.log(this._paddleHitPositions)
-                Start();
             }
 
             const paddleHitX = bx + br > this.Paddle.X && bx - br < this.Paddle.X + this.Paddle.Width;
             const paddleHitY = by + br >= this.Paddle.Y && by - br < this.Paddle.Y + this.Paddle.Height;
             if (paddleHitX && paddleHitY) {
-                
+
                 let paddleHitPos = (ball.X - this.Paddle.X - (this.Paddle.Width / 2)) / (this.Paddle.Width / 2);
                 this._paddleHitPositions.push(paddleHitPos);
                 ball.DX = Math.min(Math.max(paddleHitPos * ball.Velocity + 2, -ball.Velocity - 2), ball.Velocity + 2);
@@ -137,6 +188,35 @@ class Game {
                         this.Score++;
                         ball.DY = -ball.DY;
                         this.Breaks = this.Breaks.filter(brick => !(brick.X === b.X && brick.Y === b.Y));
+                        
+                        let randomDrop = getRandomDroppable();
+
+                        switch (randomDrop.Value) {
+                            case 1:
+                                // Double balls
+                                if (this.Balls.length <= 10) {
+                                    this.Balls.push(new Ball(ball.X, ball.Y));
+                                }
+                                break;
+                            case 2:
+                                if (this.Paddle.Width * 2 <= this.Paddle.MaxWidth) {
+                                    this.Paddle.Width *= 2;
+                                }
+                                // Bigger
+                                break;
+                            case 3:
+                                if (this.Paddle.Width / 2 >= this.Paddle.MinWidth) {
+                                    this.Paddle.Width = this.Paddle.Width / 2;
+                                }
+                                // Smaller
+                                break;
+                            case 4:
+                                // Faster
+                                break;
+                            case 5:
+                                // Slowmotion
+                                break;
+                        }
 
                         if (this.Breaks.length === 0) {
                             console.log(this._paddleHitPositions);
@@ -258,8 +338,14 @@ class Stone {
 }
 
 class Paddle {
-    Height = 25;
-    Width = 200;
+    DefaultHeight = 25;
+    MaxHeight = 25;
+    Height = this.DefaultHeight;
+
+    DefaultWidth = 200;
+    Width = this.DefaultWidth;
+    MinWidth = 50;
+    MaxWidth = 800;
     Velocity = 8;
     constructor(x, y) {
         this.X = x;
@@ -301,9 +387,9 @@ function Start() {
     Canvas.height = gameHeight;
     game = new Game(8, 8);
 
-    Canvas.addEventListener('mousemove', function(evt) {
+    Canvas.addEventListener('mousemove', function (evt) {
         game.moveMouse(getMousePos(Canvas, evt));
-      }, false);
+    }, false);
 }
 
 Start();
@@ -330,8 +416,8 @@ window.onkeyup = function (evt) {
 function getMousePos(canvas, evt) {
     const rect = canvas.getBoundingClientRect();
     return {
-      X: evt.clientX - rect.left,
-      Y: evt.clientY - rect.top
+        X: evt.clientX - rect.left,
+        Y: evt.clientY - rect.top
     };
-  }
+}
 
