@@ -8,17 +8,19 @@ function getRandomColor() {
     var letters = '0123456789ABCDEF';
     var color = '#';
     for (var i = 0; i < 6; i++) {
-      color += letters[Math.floor(Math.random() * 16)];
+        color += letters[Math.floor(Math.random() * 16)];
     }
     return color;
-  }
+}
+
 
 class Game {
+    _paddleHitPositions = [];
     _left_pressedkey;
     _right_pressedkey;
 
     Paddle = new Paddle(0, gameHeight - 47);
-    Balls = [new Ball(255, 500)];
+    Balls = [new Ball(this.Paddle.Width / 2, gameHeight - 70)];
     Breaks = [];
     _secondsPassed;
     _oldTimeStamp;
@@ -114,59 +116,36 @@ class Game {
                 if (this.Score > this.Highscore) {
                     localStorage.setItem('highscore', this.Score);
                 }
-
+                console.log(this._paddleHitPositions)
                 Start();
             }
 
             const paddleHitX = bx + br > this.Paddle.X && bx - br < this.Paddle.X + this.Paddle.Width;
             const paddleHitY = by + br >= this.Paddle.Y && by - br < this.Paddle.Y + this.Paddle.Height;
             if (paddleHitX && paddleHitY) {
-            //     float paddleHitPos = (position.x - paddleX) / (PADDLE_WIDTH / 2);
-			// speed.y = -speed.y;
-            // speed.x = paddleHitPos * RECOIL_X_MAX;
                 
-                // let paddleHitPos = (ball.X - this.Paddle.X) / (this.Paddle.Width);
                 let paddleHitPos = (ball.X - this.Paddle.X - (this.Paddle.Width / 2)) / (this.Paddle.Width / 2);
-                
-                ball.DX = Math.min(Math.max(paddleHitPos * 6, -6), 6);
+                this._paddleHitPositions.push(paddleHitPos);
+                ball.DX = Math.min(Math.max(paddleHitPos * ball.Velocity + 2, -ball.Velocity - 2), ball.Velocity + 2);
                 ball.DY = -ball.DY;
             }
 
             this.Breaks.forEach((b) => {
                 if (b.State) {
-                    // const hitY = by + br > b.Y && by - br < b.Y + b.Height
-                    // const hitX = bx + br > b.X && bx - br < b.X + b.Width;
-                    // if (hitY && hitX) {
-                    //     // debugger;
-                    //     this._ball.DY = -this._ball.DY;
-                    //     // this._ball.DX = -this._ball.DX;
-                    //     b._state = false;
-                    // }
-
-                    // const distanceX = Math.abs(this._ball.X - b.X - b.Width / 2);
-                    // const distanceY = Math.abs(this._ball.Y - b.Y - b.Height / 2);
-
-                    // if (distanceX <= (b.Width / 2)) {
-                    //     // collide
-                    //     // debugger;
-                    // }
-
-                    // if (distanceY <= (b.Height / 2)) {
-                    //     // collide
-                    //     debugger;
-                    // }
-
-                    // const dx = distanceX - b.Width / 2;
-                    // const dy = distanceY - b.Height / 2;
-                    // if (dx * dx + dy * dy <= (this._ball.Radius * this._ball.Radius)) {
-                    //     // collide
-                    //     debugger;
-                    // }
-
                     if (this.RectCircleColliding(ball, b)) {
                         b.State = false;
                         this.Score++;
-                        ball.DY = -ball.DY
+                        ball.DY = -ball.DY;
+                        this.Breaks = this.Breaks.filter(brick => !(brick.X === b.X && brick.Y === b.Y));
+
+                        if (this.Breaks.length === 0) {
+                            console.log(this._paddleHitPositions);
+                            for (let y = 0; y < this._columns; y++) {
+                                for (let x = 0; x < this._rows; x++) {
+                                    this.Breaks.push(new Stone(x * 110, y * 30))
+                                }
+                            }
+                        }
                     }
                 }
             })
@@ -175,7 +154,7 @@ class Game {
 
     drawInterface() {
         ctx.font = "30px Roboto";
-        ctx.fillText("Score: " + this.Score, gameWidth - 200, 50); 
+        ctx.fillText("Score: " + this.Score, gameWidth - 200, 50);
         ctx.fillText("Highscore: " + this.Highscore, gameWidth - 200, 80);
         ctx.fillText("FPS: " + this.Fps, gameWidth - 200, 110);
     }
@@ -186,6 +165,10 @@ class Game {
         } else if (this.State === 1) {
 
             // Calculate the number of seconds passed since the last frame
+            if (this._oldTimeStamp === undefined) {
+                this._oldTimeStamp = timeStamp;
+            }
+            const delta = (timeStamp - this._oldTimeStamp) / (1000 / 100);
             this._secondsPassed = (timeStamp - this._oldTimeStamp) / 1000;
             this._oldTimeStamp = timeStamp;
 
@@ -193,12 +176,13 @@ class Game {
             this.Fps = Math.round(1 / this._secondsPassed);
 
             if (this._left_pressedkey) {
-                this.Paddle.X -= this.Paddle.Velocity * this._secondsPassed;
+                this.Paddle.X -= this.Paddle.Velocity * delta;
             }
 
             if (this._right_pressedkey) {
-                this.Paddle.X += this.Paddle.Velocity * this._secondsPassed;
+                this.Paddle.X += this.Paddle.Velocity * delta;
             }
+
 
             // this.Paddle.X = (this.Balls[0].X - this.Paddle.Width);
 
@@ -206,8 +190,8 @@ class Game {
             this.clear();
 
             this.Balls.forEach(ball => {
-                ball.X += ball.DX;
-                ball.Y += ball.DY;
+                ball.X += ball.DX * delta// * (this.Score ? this.Score : 1 * 0.1);
+                ball.Y += ball.DY * delta// * (this.Score ? this.Score : 1 * 0.1);;
             })
             this.drawInterface();
             this.draw();
@@ -230,7 +214,7 @@ class Game {
 
         this.Balls.forEach(ball => {
             let l = [
-                [ball.X +ball.Radius, ball.Y + ball.Radius],
+                [ball.X + ball.Radius, ball.Y + ball.Radius],
                 [ball.X - ball.Radius, ball.Y - ball.Radius],
                 [ball.X + ball.Radius, ball.Y - ball.Radius],
                 [ball.X - ball.Radius, ball.Y + ball.Radius],
@@ -276,7 +260,7 @@ class Stone {
 class Paddle {
     Height = 25;
     Width = 200;
-    Velocity = 1000;
+    Velocity = 8;
     constructor(x, y) {
         this.X = x;
         this.Y = y;
@@ -290,11 +274,12 @@ class Paddle {
 
 class Ball {
     Radius = 15;
-    DX = 4;
-    DY = -4;
+    Velocity = 6;
     constructor(x, y) {
         this.X = x;
         this.Y = y;
+        this.DX = this.Velocity;
+        this.DY = -this.Velocity;
     }
 
     draw() {
@@ -308,10 +293,10 @@ class Ball {
 function Start() {
     gameWidth = window.innerWidth / 2;
     gameHeight = window.innerHeight / 2;
-    
+
     Canvas = document.getElementById('Paper')
     ctx = Canvas.getContext('2d');
-    
+
     Canvas.width = gameWidth;
     Canvas.height = gameHeight;
     game = new Game(8, 8);
