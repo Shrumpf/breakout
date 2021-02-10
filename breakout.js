@@ -116,9 +116,13 @@ class Game {
     }
 
     init() {
+        let xOffset = (gameWidth / 2) - (this._columns / 2 * 110)
+        let yOffset = 60;
+        console.log(xOffset);
+
         for (let y = 0; y < this._columns; y++) {
             for (let x = 0; x < this._rows; x++) {
-                this.Breaks.push(new Stone(x * 110, y * 30))
+                this.Breaks.push(new Stone(x * 110 + xOffset, y * 30 + yOffset))
             }
         }
         this.State = 1;
@@ -178,7 +182,7 @@ class Game {
 
                 let paddleHitPos = (ball.X - this.Paddle.X - (this.Paddle.Width / 2)) / (this.Paddle.Width / 2);
                 this._paddleHitPositions.push(paddleHitPos);
-                ball.DX = Math.min(Math.max(paddleHitPos * ball.Velocity + 2, -ball.Velocity - 2), ball.Velocity + 2);
+                ball.DX = Math.min(Math.max(paddleHitPos * ball.Velocity, -ball.Velocity), ball.Velocity);
                 ball.DY = -ball.DY;
             }
 
@@ -264,8 +268,13 @@ class Game {
                 this.Paddle.X += this.Paddle.Velocity * delta;
             }
 
-
-            // this.Paddle.X = (this.Balls[0].X - this.Paddle.Width);
+            // if (this._paddleHitPositions.length < 11) {                
+            //     this.Paddle.X = (this.Balls[0].X - this.Paddle.Width / 1.5);
+            // } else if (this._paddleHitPositions.length < 21) {
+            //     this.Paddle.X = (this.Balls[0].X - this.Paddle.Width / 3);
+            // } else if (this._paddleHitPositions.length < 31) {
+            //     this.Paddle.X = (this.Balls[0].X - this.Paddle.Width / 2);
+            // }
 
             this.collisionDetection();
             this.clear();
@@ -378,8 +387,8 @@ class Ball {
 }
 
 function Start() {
-    gameWidth = window.innerWidth / 2;
-    gameHeight = window.innerHeight / 2;
+    gameWidth = window.innerWidth;
+    gameHeight = window.innerHeight;
 
     Canvas = document.getElementById('Paper')
     ctx = Canvas.getContext('2d');
