@@ -66,6 +66,7 @@ class Game {
     _paddleHitPositions = [];
     _left_pressedkey;
     _right_pressedkey;
+    delta = null;
 
     Paddle = new Paddle(0, gameHeight - 47);
     Balls = [new Ball(this.Paddle.Width / 2, gameHeight - 70)];
@@ -112,7 +113,7 @@ class Game {
     }
 
     moveMouse(mousePos) {
-        this.Paddle.X = mousePos.X - this.Paddle.Width / 2
+        this.Paddle.X += mousePos * this.Paddle.Velocity * this.delta;
     }
 
     init() {
@@ -253,7 +254,7 @@ class Game {
             if (this._oldTimeStamp === undefined) {
                 this._oldTimeStamp = timeStamp;
             }
-            const delta = (timeStamp - this._oldTimeStamp) / (1000 / 100);
+            this.delta = (timeStamp - this._oldTimeStamp) / (1000 / 100);
             this._secondsPassed = (timeStamp - this._oldTimeStamp) / 1000;
             this._oldTimeStamp = timeStamp;
 
@@ -261,11 +262,11 @@ class Game {
             this.Fps = Math.round(1 / this._secondsPassed);
 
             if (this._left_pressedkey) {
-                this.Paddle.X -= this.Paddle.Velocity * delta;
+                this.Paddle.X -= this.Paddle.Velocity * this.delta;
             }
 
             if (this._right_pressedkey) {
-                this.Paddle.X += this.Paddle.Velocity * delta;
+                this.Paddle.X += this.Paddle.Velocity * this.delta;
             }
 
             // if (this._paddleHitPositions.length < 11) {                
@@ -280,8 +281,8 @@ class Game {
             this.clear();
 
             this.Balls.forEach(ball => {
-                ball.X += ball.DX * delta// * (this.Score ? this.Score : 1 * 0.1);
-                ball.Y += ball.DY * delta// * (this.Score ? this.Score : 1 * 0.1);;
+                ball.X += ball.DX * this.delta// * (this.Score ? this.Score : 1 * 0.1);
+                ball.Y += ball.DY * this.delta// * (this.Score ? this.Score : 1 * 0.1);;
             })
             this.drawInterface();
             this.draw();
@@ -356,7 +357,7 @@ class Paddle {
     Width = this.DefaultWidth;
     MinWidth = 50;
     MaxWidth = 800;
-    Velocity = 8;
+    Velocity = 2;
     constructor(x, y) {
         this.X = x;
         this.Y = y;
@@ -396,10 +397,6 @@ function Start() {
     Canvas.width = gameWidth;
     Canvas.height = gameHeight;
     game = new Game(8, 8);
-
-    Canvas.addEventListener('mousemove', function (evt) {
-        game.moveMouse(getMousePos(Canvas, evt));
-    }, false);
 }
 
 Start();
@@ -421,6 +418,35 @@ window.onkeyup = function (evt) {
     } else if (evt.key === "ArrowLeft") {
         game.keypress("left", "up");
     }
+}
+
+Canvas.requestPointerLock = Canvas.requestPointerLock ||
+                            Canvas.mozRequestPointerLock;
+
+document.exitPointerLock = document.exitPointerLock ||
+                           document.mozExitPointerLock;
+
+Canvas.onclick = function() {
+  Canvas.requestPointerLock();
+};
+
+let x = 0;
+let y = 0;
+
+function updatePosition(evt) {
+    game.moveMouse(evt.movementX);
+}
+
+document.addEventListener('pointerlockchange', lockChangeAlert, false);
+document.addEventListener('mozpointerlockchange', lockChangeAlert, false);
+
+function lockChangeAlert() {
+  if (document.pointerLockElement === Canvas ||
+      document.mozPointerLockElement === Canvas) {
+    document.addEventListener("mousemove", updatePosition, false);
+  } else {
+    document.removeEventListener("mousemove", updatePosition, false);
+  }
 }
 
 function getMousePos(canvas, evt) {
