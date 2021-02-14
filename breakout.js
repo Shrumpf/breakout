@@ -1,7 +1,7 @@
 let gameWidth;
 let gameHeight;
-let Canvas;
-let ctx;
+let Layers = {};
+
 let game;
 
 
@@ -113,7 +113,7 @@ class Game {
     }
 
     moveMouse(mousePos) {
-        this.Paddle.X += mousePos * this.Paddle.Velocity * this.delta;
+        this.Paddle.X += mousePos * this.Paddle.Velocity;
     }
 
     init() {
@@ -194,34 +194,39 @@ class Game {
                         this.Score++;
                         ball.DY = -ball.DY;
                         this.Breaks = this.Breaks.filter(brick => !(brick.X === b.X && brick.Y === b.Y));
-                        
-                        let randomDrop = getRandomDroppable();
+                        b.draw();
+                        Layers.Breaks.Ctx.clearRect(b.X, b.Y, b.Width, b.Height);
+                        Layers.UI.Ctx.clearRect(0,0, gameWidth, gameHeight);
+                        this.drawInterface();
 
-                        switch (randomDrop.Value) {
-                            case 1:
-                                // Double balls
-                                if (this.Balls.length <= 10) {
-                                    this.Balls.push(new Ball(ball.X, ball.Y));
-                                }
-                                break;
-                            case 2:
-                                if (this.Paddle.Width * 2 <= this.Paddle.MaxWidth) {
-                                    this.Paddle.Width *= 2;
-                                }
-                                // Bigger
-                                break;
-                            case 3:
-                                if (this.Paddle.Width / 2 >= this.Paddle.MinWidth) {
-                                    this.Paddle.Width = this.Paddle.Width / 2;
-                                }
-                                // Smaller
-                                break;
-                            case 4:
-                                // Faster
-                                break;
-                            case 5:
-                                // Slowmotion
-                                break;
+                        let randomDrop = getRandomDroppable();
+                        if (randomDrop !== 0) {
+                            switch (randomDrop.Value) {
+                                case 1:
+                                    // Double balls
+                                    if (this.Balls.length <= 10) {
+                                        this.Balls.push(new Ball(ball.X, ball.Y));
+                                    }
+                                    break;
+                                case 2:
+                                    if (this.Paddle.Width * 2 <= this.Paddle.MaxWidth) {
+                                        this.Paddle.Width *= 2;
+                                    }
+                                    // Bigger
+                                    break;
+                                case 3:
+                                    if (this.Paddle.Width / 2 >= this.Paddle.MinWidth) {
+                                        this.Paddle.Width = this.Paddle.Width / 2;
+                                    }
+                                    // Smaller
+                                    break;
+                                case 4:
+                                    // Faster
+                                    break;
+                                case 5:
+                                    // Slowmotion
+                                    break;
+                            }
                         }
 
                         if (this.Breaks.length === 0) {
@@ -239,10 +244,12 @@ class Game {
     }
 
     drawInterface() {
-        ctx.font = "30px Roboto";
-        ctx.fillText("Score: " + this.Score, gameWidth - 200, 50);
-        ctx.fillText("Highscore: " + this.Highscore, gameWidth - 200, 80);
-        ctx.fillText("FPS: " + this.Fps, gameWidth - 200, 110);
+        Layers.UI.Ctx.font = "30px Roboto";
+        Layers.UI.Ctx.fillText("Score: " + this.Score, gameWidth - 200, 50);
+        Layers.UI.Ctx.fillText("Highscore: " + this.Highscore, gameWidth - 200, 80);
+
+        Layers.Balls.Ctx.font = "30px Roboto";
+        Layers.Balls.Ctx.fillText("FPS: " + this.Fps, gameWidth - 200, 110);
     }
 
     gameloop(timeStamp) {
@@ -284,49 +291,21 @@ class Game {
                 ball.X += ball.DX * this.delta// * (this.Score ? this.Score : 1 * 0.1);
                 ball.Y += ball.DY * this.delta// * (this.Score ? this.Score : 1 * 0.1);;
             })
-            this.drawInterface();
+            // this.drawInterface();
             this.draw();
-            this.debug();
         }
         window.requestAnimationFrame(this.gameloop.bind(this));
     }
 
     draw() {
-        this.Breaks.forEach((b) => {
-            b.draw();
-        });
         this.Paddle.draw();
         this.Balls.forEach(ball => {
             ball.draw();
         });
     }
 
-    debug() {
-
-        this.Balls.forEach(ball => {
-            let l = [
-                [ball.X + ball.Radius, ball.Y + ball.Radius],
-                [ball.X - ball.Radius, ball.Y - ball.Radius],
-                [ball.X + ball.Radius, ball.Y - ball.Radius],
-                [ball.X - ball.Radius, ball.Y + ball.Radius],
-                [ball.X, ball.Y]
-            ];
-
-            l.forEach(i => {
-                ctx.beginPath();
-                ctx.fillStyle = 'rgb(255, 0, 0)';
-                ctx.arc(i[0], i[1], 2, 0, 6.283185307179586);
-                ctx.fill();
-            })
-        })
-        ctx.beginPath();
-        ctx.fillStyle = 'rgb(255, 0, 0)';
-        ctx.arc(this.Paddle.X, this.Paddle.Y, 2, 0, 6.283185307179586);
-        ctx.fill();
-    }
-
     clear() {
-        ctx.clearRect(0, 0, gameWidth, gameHeight);
+        Layers.Balls.Ctx.clearRect(0, 0, gameWidth, gameHeight);
     }
 }
 
@@ -338,12 +317,13 @@ class Stone {
         this.X = x;
         this.Y = y;
         this.Color = getRandomColor();
+        this.draw();
     }
 
     draw() {
         if (this.State) {
-            ctx.fillStyle = this.Color;
-            ctx.fillRect(this.X, this.Y, this.Width, this.Height);
+            Layers.Breaks.Ctx.fillStyle = this.Color;
+            Layers.Breaks.Ctx.fillRect(this.X, this.Y, this.Width, this.Height);
         }
     }
 }
@@ -364,8 +344,8 @@ class Paddle {
     }
 
     draw() {
-        ctx.fillStyle = 'rgb(0, 0, 255';
-        ctx.fillRect(this.X, this.Y, this.Width, this.Height);
+        Layers.Balls.Ctx.fillStyle = 'rgb(0, 0, 255';
+        Layers.Balls.Ctx.fillRect(this.X, this.Y, this.Width, this.Height);
     }
 }
 
@@ -380,10 +360,10 @@ class Ball {
     }
 
     draw() {
-        ctx.beginPath();
-        ctx.fillStyle = 'rgb(0, 0, 0)';
-        ctx.arc(this.X, this.Y, this.Radius, 0, (Math.PI / 180) * 360);
-        ctx.fill();
+        Layers.Balls.Ctx.beginPath();
+        Layers.Balls.Ctx.fillStyle = 'rgb(0, 0, 0)';
+        Layers.Balls.Ctx.arc(this.X, this.Y, this.Radius, 0, (Math.PI / 180) * 360);
+        Layers.Balls.Ctx.fill();
     }
 }
 
@@ -391,11 +371,31 @@ function Start() {
     gameWidth = window.innerWidth;
     gameHeight = window.innerHeight;
 
-    Canvas = document.getElementById('Paper')
-    ctx = Canvas.getContext('2d');
+    Layers = {
+        Breaks: {
+            Canvas: document.getElementById('Breaks'),
+            Ctx: document.getElementById('Breaks').getContext('2d')
+        },
+        Balls: {
+            Canvas: document.getElementById('Balls'),
+            Ctx: document.getElementById('Balls').getContext('2d')
+        },
+        UI: {
+            Canvas: document.getElementById('UI'),
+            Ctx: document.getElementById('UI').getContext('2d')
+        }
+    }
 
-    Canvas.width = gameWidth;
-    Canvas.height = gameHeight;
+    for (layer in Layers) {
+        let c = Layers[layer].Canvas;
+        c.width = gameWidth;
+        c.height = gameHeight;
+        Layers[layer].Ctx.translate(gameWidth / 2, gameHeight / 2);
+        Layers[layer].Ctx.rotate(180 * Math.PI / 180);
+        Layers[layer].Ctx.translate(-(gameWidth / 2), -(gameHeight / 2));
+
+    }
+
     game = new Game(8, 8);
 }
 
@@ -420,14 +420,14 @@ window.onkeyup = function (evt) {
     }
 }
 
-Canvas.requestPointerLock = Canvas.requestPointerLock ||
-                            Canvas.mozRequestPointerLock;
+Layers.UI.Canvas.requestPointerLock = Layers.UI.Canvas.requestPointerLock ||
+    Layers.UI.Canvas.mozRequestPointerLock;
 
 document.exitPointerLock = document.exitPointerLock ||
-                           document.mozExitPointerLock;
+    document.mozExitPointerLock;
 
-Canvas.onclick = function() {
-  Canvas.requestPointerLock();
+Layers.UI.Canvas.onclick = function () {
+    Layers.UI.Canvas.requestPointerLock();
 };
 
 let x = 0;
@@ -441,12 +441,12 @@ document.addEventListener('pointerlockchange', lockChangeAlert, false);
 document.addEventListener('mozpointerlockchange', lockChangeAlert, false);
 
 function lockChangeAlert() {
-  if (document.pointerLockElement === Canvas ||
-      document.mozPointerLockElement === Canvas) {
-    document.addEventListener("mousemove", updatePosition, false);
-  } else {
-    document.removeEventListener("mousemove", updatePosition, false);
-  }
+    if (document.pointerLockElement === Layers.UI.Canvas ||
+        document.mozPointerLockElement === Layers.UI.Canvas) {
+        document.addEventListener("mousemove", updatePosition, false);
+    } else {
+        document.removeEventListener("mousemove", updatePosition, false);
+    }
 }
 
 function getMousePos(canvas, evt) {

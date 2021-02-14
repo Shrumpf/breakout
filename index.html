@@ -16,13 +16,34 @@
             overflow: hidden;
         }
 
+        .Canvasas {
+            position: relative;
+        }
+
         canvas {
+            position: absolute;
             border: 1px solid black;
             cursor: none;
+        }
+
+        #UI {
+            z-index: 3;
+        }
+
+        #Breaks {
+            z-index: 2;
+        }
+
+        #Balls {
+            z-index: 1;
         }
     </style>
 </head>
 <body>
-    <canvas id="Paper" width="1280px" height="649px"></canvas>
+    <div class="Canvasas">
+        <canvas id="UI" width="1280px" height="649px"></canvas>
+        <canvas id="Breaks" width="1280px" height="649px"></canvas>
+        <canvas id="Balls" width="1280px" height="649px"></canvas>
+    </div>
 </body>
 </html>
